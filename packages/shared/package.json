@@ -1,0 +1,12 @@
+{
+  "name": "@sensi-gg/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./types": "./src/types.js",
+    "./constants": "./src/constants.js",
+    "./validation": "./src/validation.js"
+  }
+}

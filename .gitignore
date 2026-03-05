@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+data/
+generated/
+.next/
+.vercel/
+
+# AI tool directories
+.omc/
+.claude/
+.team-os/
+*.jsonl
