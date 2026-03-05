@@ -2,17 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { UserAvatar } from '@/components/UserAvatar';
-import { SectionBadge } from '@/components/SectionBadge';
-import { LikeButton } from '@/components/LikeButton';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-
-const SECTION_CONFIG: Record<string, { label: string; emoji: string }> = {
-  sens: { label: '감도', emoji: '🎯' },
-  gear: { label: '장비', emoji: '⌨️' },
-  game: { label: '그래픽', emoji: '🖥️' },
-  tips: { label: '꿀팁', emoji: '💡' },
-};
 
 export default async function SetupDetailPage({
   params,
@@ -24,40 +15,14 @@ export default async function SetupDetailPage({
 
   const { data: setup } = await supabase
     .from('setups')
-    .select('*, profiles!inner(discord_id, username, avatar_url)')
+    .select('*, profiles!inner(display_name, discord_user_id, avatar_url, handle)')
     .eq('id', id)
     .single();
 
   if (!setup) notFound();
 
-  // Like count
-  const { count: likeCount } = await supabase
-    .from('likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('setup_id', setup.id);
-
-  // Current user liked?
-  const { data: { user } } = await supabase.auth.getUser();
-  let userLiked = false;
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('discord_id', user.user_metadata?.provider_id || '')
-      .single();
-
-    if (profile) {
-      const { data: like } = await supabase
-        .from('likes')
-        .select('id')
-        .eq('user_id', profile.id)
-        .eq('setup_id', setup.id)
-        .single();
-      userLiked = !!like;
-    }
-  }
-
-  const sections = ['sens', 'gear', 'game', 'tips'].filter(s => setup[s]);
+  const formatVal = (v: number | null | undefined) =>
+    v != null ? String(v) : '—';
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -69,61 +34,130 @@ export default async function SetupDetailPage({
       </Link>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <UserAvatar
-            src={setup.profiles.avatar_url}
-            username={setup.profiles.username}
-            size={56}
-          />
-          <div>
-            <h1 className="text-2xl font-bold text-cloud-white">
-              {setup.profiles.username}
-            </h1>
-            <p className="text-text-muted text-sm">
-              {new Date(setup.created_at).toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
+      <div className="flex items-center gap-4 mb-8">
+        <UserAvatar
+          src={setup.profiles.avatar_url}
+          username={setup.profiles.display_name}
+          size={56}
+        />
+        <div>
+          <h1 className="text-2xl font-bold text-cloud-white">
+            {setup.profiles.display_name}
+          </h1>
+          <p className="text-text-muted text-sm">
+            {new Date(setup.updated_at).toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {/* Sensitivity */}
+        <div className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6">
+          <h2 className="text-fairy-gold font-semibold text-lg mb-4">🎯 Sensitivity</h2>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-text-muted">DPI</span>
+              <span className="text-cloud-white font-medium">{setup.dpi}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-text-muted">General</span>
+              <span className="text-cloud-white font-medium">{setup.general_sens}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-text-muted">eDPI</span>
+              <span className="text-fairy-gold font-medium">
+                {Math.round(setup.dpi * setup.general_sens).toLocaleString()}
+              </span>
+            </div>
+            {setup.vertical_multiplier != null && (
+              <div className="flex justify-between">
+                <span className="text-text-muted">Vertical</span>
+                <span className="text-cloud-white font-medium">{setup.vertical_multiplier}</span>
+              </div>
+            )}
+            {setup.ads_sens != null && (
+              <div className="flex justify-between">
+                <span className="text-text-muted">ADS</span>
+                <span className="text-cloud-white font-medium">{setup.ads_sens}</span>
+              </div>
+            )}
           </div>
         </div>
 
-        <LikeButton
-          setupId={setup.id}
-          initialCount={likeCount || 0}
-          initialLiked={userLiked}
-          isLoggedIn={!!user}
-        />
-      </div>
-
-      {/* Badges */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {sections.map(s => (
-          <SectionBadge key={s} section={s} size="md" />
-        ))}
-      </div>
-
-      {/* Sections */}
-      <div className="space-y-4">
-        {sections.map(section => {
-          const config = SECTION_CONFIG[section];
-          return (
-            <div
-              key={section}
-              className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6"
-            >
-              <h2 className="text-fairy-gold font-semibold text-lg mb-3 flex items-center gap-2">
-                <span>{config.emoji}</span>
-                <span>{config.label}</span>
-              </h2>
-              <pre className="text-text-secondary whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                {setup[section]}
-              </pre>
+        {/* Scopes */}
+        {[setup.scope_2x, setup.scope_3x, setup.scope_4x, setup.scope_6x, setup.scope_8x, setup.scope_15x].some(v => v != null) && (
+          <div className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6">
+            <h2 className="text-fairy-gold font-semibold text-lg mb-4">🔭 Scopes</h2>
+            <div className="grid grid-cols-3 gap-3 text-sm">
+              {[
+                ['2×', setup.scope_2x],
+                ['3×', setup.scope_3x],
+                ['4×', setup.scope_4x],
+                ['6×', setup.scope_6x],
+                ['8×', setup.scope_8x],
+                ['15×', setup.scope_15x],
+              ].map(([label, val]) => val != null && (
+                <div key={String(label)} className="flex justify-between">
+                  <span className="text-text-muted">{label}</span>
+                  <span className="text-cloud-white font-medium">{formatVal(val as number)}</span>
+                </div>
+              ))}
             </div>
-          );
-        })}
+          </div>
+        )}
+
+        {/* Gear */}
+        {[setup.mouse, setup.keyboard, setup.headset, setup.mousepad, setup.monitor].some(Boolean) && (
+          <div className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6">
+            <h2 className="text-fairy-gold font-semibold text-lg mb-4">⌨️ Gear</h2>
+            <div className="space-y-2 text-sm">
+              {setup.mouse && (
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Mouse</span>
+                  <span className="text-cloud-white">{setup.mouse}</span>
+                </div>
+              )}
+              {setup.keyboard && (
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Keyboard</span>
+                  <span className="text-cloud-white">{setup.keyboard}</span>
+                </div>
+              )}
+              {setup.headset && (
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Headset</span>
+                  <span className="text-cloud-white">{setup.headset}</span>
+                </div>
+              )}
+              {setup.mousepad && (
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Mousepad</span>
+                  <span className="text-cloud-white">{setup.mousepad}</span>
+                </div>
+              )}
+              {setup.monitor && (
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Monitor</span>
+                  <span className="text-cloud-white">{setup.monitor}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        {setup.notes && (
+          <div className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6">
+            <h2 className="text-fairy-gold font-semibold text-lg mb-3">💡 Notes</h2>
+            <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">
+              {setup.notes}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

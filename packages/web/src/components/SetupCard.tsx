@@ -1,27 +1,24 @@
 import Link from 'next/link';
 import { UserAvatar } from './UserAvatar';
-import { SectionBadge } from './SectionBadge';
 
 interface SetupCardProps {
   setup: {
     id: string;
-    sens?: string | null;
-    gear?: string | null;
-    game?: string | null;
-    tips?: string | null;
-    created_at: string;
-    like_count?: number;
+    dpi: number;
+    general_sens: number;
+    mouse?: string | null;
+    keyboard?: string | null;
+    updated_at: string;
     profiles: {
-      username: string;
+      display_name: string;
       avatar_url?: string | null;
+      handle?: string | null;
     };
   };
 }
 
 export function SetupCard({ setup }: SetupCardProps) {
-  const sections = ['sens', 'gear', 'game', 'tips'].filter(
-    s => setup[s as keyof typeof setup]
-  );
+  const edpi = Math.round(setup.dpi * setup.general_sens);
 
   return (
     <Link
@@ -31,34 +28,37 @@ export function SetupCard({ setup }: SetupCardProps) {
       <div className="flex items-center gap-3 mb-4">
         <UserAvatar
           src={setup.profiles.avatar_url}
-          username={setup.profiles.username}
+          username={setup.profiles.display_name}
           size={36}
         />
         <div>
           <div className="font-medium text-cloud-white group-hover:text-fairy-gold transition-colors">
-            {setup.profiles.username}
+            {setup.profiles.display_name}
           </div>
           <div className="text-xs text-text-muted">
-            {new Date(setup.created_at).toLocaleDateString('ko-KR')}
+            {new Date(setup.updated_at).toLocaleDateString('ko-KR')}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {sections.map(s => (
-          <SectionBadge key={s} section={s} />
-        ))}
+      <div className="flex gap-4 text-sm mb-3">
+        <div>
+          <span className="text-text-muted text-xs">DPI </span>
+          <span className="text-cloud-white font-medium">{setup.dpi}</span>
+        </div>
+        <div>
+          <span className="text-text-muted text-xs">Sens </span>
+          <span className="text-cloud-white font-medium">{setup.general_sens}</span>
+        </div>
+        <div>
+          <span className="text-text-muted text-xs">eDPI </span>
+          <span className="text-fairy-gold font-medium">{edpi.toLocaleString()}</span>
+        </div>
       </div>
 
-      {setup.sens && (
-        <p className="text-sm text-text-secondary line-clamp-2">
-          {setup.sens}
-        </p>
+      {setup.mouse && (
+        <p className="text-xs text-text-muted truncate">🖱 {setup.mouse}</p>
       )}
-
-      <div className="mt-3 flex items-center text-text-muted text-xs">
-        <span>❤️ {setup.like_count ?? 0}</span>
-      </div>
     </Link>
   );
 }

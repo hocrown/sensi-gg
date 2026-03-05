@@ -11,7 +11,7 @@ export async function GET(
 
   const { data: setup, error } = await supabase
     .from('setups')
-    .select('*, profiles!inner(discord_id, username, avatar_url)')
+    .select('*, profiles!inner(display_name, discord_user_id, avatar_url, handle)')
     .eq('id', id)
     .single();
 
@@ -19,15 +19,10 @@ export async function GET(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const { count: likeCount } = await supabase
-    .from('likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('setup_id', setup.id);
-
-  return NextResponse.json({ ...setup, like_count: likeCount || 0 });
+  return NextResponse.json(setup);
 }
 
-// PUT /api/setups/[id] — Update setup (authenticated, owner only)
+// PUT /api/setups/[id] — Update setup (owner only)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -40,34 +35,41 @@ export async function PUT(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const discordId = user.user_metadata?.provider_id;
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('discord_id', discordId)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-  }
-
-  // Verify ownership
+  // Verify ownership — profile_id = user.id in new schema
   const { data: existing } = await supabase
     .from('setups')
-    .select('user_id')
+    .select('profile_id')
     .eq('id', id)
     .single();
 
-  if (!existing || existing.user_id !== profile.id) {
+  if (!existing || existing.profile_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const body = await request.json();
-  const updates: Record<string, unknown> = { sync_status: 'pending_thread' };
-  if (body.sens !== undefined) updates.sens = body.sens;
-  if (body.gear !== undefined) updates.gear = body.gear;
-  if (body.game !== undefined) updates.game = body.game;
-  if (body.tips !== undefined) updates.tips = body.tips;
+  const {
+    dpi, general_sens, vertical_multiplier, ads_sens,
+    scope_2x, scope_3x, scope_4x, scope_6x, scope_8x, scope_15x,
+    mouse, keyboard, headset, mousepad, monitor, notes,
+  } = body;
+
+  const updates: Record<string, unknown> = {};
+  if (dpi !== undefined) updates.dpi = dpi;
+  if (general_sens !== undefined) updates.general_sens = general_sens;
+  if (vertical_multiplier !== undefined) updates.vertical_multiplier = vertical_multiplier;
+  if (ads_sens !== undefined) updates.ads_sens = ads_sens;
+  if (scope_2x !== undefined) updates.scope_2x = scope_2x;
+  if (scope_3x !== undefined) updates.scope_3x = scope_3x;
+  if (scope_4x !== undefined) updates.scope_4x = scope_4x;
+  if (scope_6x !== undefined) updates.scope_6x = scope_6x;
+  if (scope_8x !== undefined) updates.scope_8x = scope_8x;
+  if (scope_15x !== undefined) updates.scope_15x = scope_15x;
+  if (mouse !== undefined) updates.mouse = mouse;
+  if (keyboard !== undefined) updates.keyboard = keyboard;
+  if (headset !== undefined) updates.headset = headset;
+  if (mousepad !== undefined) updates.mousepad = mousepad;
+  if (monitor !== undefined) updates.monitor = monitor;
+  if (notes !== undefined) updates.notes = notes;
 
   const { data: setup, error } = await supabase
     .from('setups')
@@ -83,7 +85,7 @@ export async function PUT(
   return NextResponse.json(setup);
 }
 
-// DELETE /api/setups/[id] — Delete setup (authenticated, owner only)
+// DELETE /api/setups/[id] — Delete setup (owner only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -96,37 +98,17 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const discordId = user.user_metadata?.provider_id;
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('discord_id', discordId)
-    .single();
-
-  if (!profile) {
-    return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-  }
-
   const { data: existing } = await supabase
     .from('setups')
-    .select('user_id, thread_id')
+    .select('profile_id')
     .eq('id', id)
     .single();
 
-  if (!existing || existing.user_id !== profile.id) {
+  if (!existing || existing.profile_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  if (existing.thread_id) {
-    // Mark for bot deletion
-    await supabase
-      .from('setups')
-      .update({ sync_status: 'pending_delete' })
-      .eq('id', id);
-  } else {
-    // No thread, just delete directly
-    await supabase.from('setups').delete().eq('id', id);
-  }
+  await supabase.from('setups').delete().eq('id', id);
 
   return NextResponse.json({ success: true });
 }
