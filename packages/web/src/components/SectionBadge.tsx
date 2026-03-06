@@ -1,8 +1,8 @@
 const SECTION_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
-  sens: { label: '감도', emoji: '🎯', color: 'bg-red-500/20 text-red-300 border-red-500/30' },
-  gear: { label: '장비', emoji: '⌨️', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-  game: { label: '그래픽', emoji: '🖥️', color: 'bg-green-500/20 text-green-300 border-green-500/30' },
-  tips: { label: '꿀팁', emoji: '💡', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' },
+  sens: { label: '감도', emoji: '🎯', color: 'bg-fairy-gold/20 text-fairy-gold border-fairy-gold/30' },
+  gear: { label: '장비', emoji: '⌨️', color: 'bg-mist-blue/20 text-mist-blue border-mist-blue/30' },
+  game: { label: '그래픽', emoji: '🖥️', color: 'bg-deep-periwinkle/20 text-cloud-white border-deep-periwinkle/30' },
+  tips: { label: '꿀팁', emoji: '💡', color: 'bg-fairy-gold/20 text-fairy-gold border-fairy-gold/30' },
 };
 
 interface SectionBadgeProps {

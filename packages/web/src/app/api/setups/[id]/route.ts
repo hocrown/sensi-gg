@@ -53,6 +53,33 @@ export async function PUT(
     mouse, keyboard, headset, mousepad, monitor, notes,
   } = body;
 
+  // Validate numeric fields when provided
+  if (dpi !== undefined && (typeof dpi !== 'number' || dpi < 100 || dpi > 6400)) {
+    return NextResponse.json({ error: 'dpi must be between 100 and 6400' }, { status: 400 });
+  }
+  if (general_sens !== undefined && (typeof general_sens !== 'number' || general_sens < 1 || general_sens > 100)) {
+    return NextResponse.json({ error: 'general_sens must be between 1 and 100' }, { status: 400 });
+  }
+  const sensFields = { ads_sens, scope_2x, scope_3x, scope_4x, scope_6x, scope_8x, scope_15x };
+  for (const [key, val] of Object.entries(sensFields)) {
+    if (val !== undefined && val !== null && (typeof val !== 'number' || val < 1 || val > 100)) {
+      return NextResponse.json({ error: `${key} must be between 1 and 100` }, { status: 400 });
+    }
+  }
+  if (vertical_multiplier !== undefined && vertical_multiplier !== null &&
+      (typeof vertical_multiplier !== 'number' || vertical_multiplier < 0.5 || vertical_multiplier > 2.0)) {
+    return NextResponse.json({ error: 'vertical_multiplier must be between 0.5 and 2.0' }, { status: 400 });
+  }
+  const textFields = { mouse, keyboard, headset, mousepad, monitor };
+  for (const [key, val] of Object.entries(textFields)) {
+    if (val !== undefined && val !== null && (typeof val !== 'string' || val.length > 100)) {
+      return NextResponse.json({ error: `${key} must be a string under 100 characters` }, { status: 400 });
+    }
+  }
+  if (notes !== undefined && notes !== null && (typeof notes !== 'string' || notes.length > 1000)) {
+    return NextResponse.json({ error: 'notes must be under 1000 characters' }, { status: 400 });
+  }
+
   const updates: Record<string, unknown> = {};
   if (dpi !== undefined) updates.dpi = dpi;
   if (general_sens !== undefined) updates.general_sens = general_sens;
