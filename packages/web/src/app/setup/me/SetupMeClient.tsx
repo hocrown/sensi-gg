@@ -209,14 +209,10 @@ export function SetupMeClient({ initialSetup, handle }: SetupMeClientProps) {
   };
 
   const handleCopyLink = async () => {
-    try {
-      const url = handle ? `${window.location.origin}/u/${handle}` : window.location.href;
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // clipboard API may fail in some contexts
-    }
+    const url = handle ? `${window.location.origin}/u/${handle}` : window.location.href;
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const cardUrl = handle ? `/u/${handle}` : null;

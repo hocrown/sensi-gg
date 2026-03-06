@@ -35,7 +35,7 @@ export function SetupHeaderControls() {
           onClick={() => setLang('EN')}
           className={`rounded-full px-3 py-0.5 text-xs font-semibold transition-colors ${
             lang === 'EN'
-              ? 'bg-fairy-gold/30 border border-fairy-gold/50 text-fairy-gold'
+              ? 'bg-[rgba(253,199,0,0.3)] border border-[rgba(253,199,0,0.5)] text-[#fff085]'
               : 'border border-transparent text-white/50 hover:text-white/70'
           }`}
         >
@@ -45,7 +45,7 @@ export function SetupHeaderControls() {
           onClick={() => setLang('KR')}
           className={`rounded-full px-3 py-0.5 text-xs font-semibold transition-colors ${
             lang === 'KR'
-              ? 'bg-fairy-gold/30 border border-fairy-gold/50 text-fairy-gold'
+              ? 'bg-[rgba(253,199,0,0.3)] border border-[rgba(253,199,0,0.5)] text-[#fff085]'
               : 'border border-transparent text-white/50 hover:text-white/70'
           }`}
         >
@@ -72,7 +72,7 @@ export function SetupHeaderControls() {
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/90 bg-white/5 hover:bg-white/10 transition-colors"
               onClick={() => setProfileOpen(false)}
             >
-              <Check size={14} className="text-fairy-gold" />
+              <Check size={14} className="text-[#fff085]" />
               <span className="font-medium">Main Setup</span>
             </button>
             <button

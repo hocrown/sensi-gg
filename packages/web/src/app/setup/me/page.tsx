@@ -72,7 +72,8 @@ export default async function SetupMePage() {
             {displayName}
           </h1>
           <p
-            className="mt-1 text-sm font-medium tracking-[0.25em] uppercase text-mist-blue"
+            className="mt-1 text-sm font-medium tracking-[0.25em] uppercase"
+            style={{ color: '#AFC6FF' }}
           >
             — SENSI.GG —
           </p>

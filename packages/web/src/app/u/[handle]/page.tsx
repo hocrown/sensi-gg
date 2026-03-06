@@ -140,18 +140,18 @@ export default async function ProfilePage({ params }: PageProps) {
           </div>
         </div>
 
-        {(setup.ads_sens != null || setup.vertical_multiplier != null) && (
+        {(setup.ads_sens || setup.vertical_multiplier) && (
           <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5">
             {setup.ads_sens != null && (
               <div className="text-center">
                 <span className="text-sm text-white/40 block mb-1">ADS</span>
-                <span className="text-sm text-cloud-white font-medium">{setup.ads_sens}</span>
+                <span className="text-sm text-text-secondary">{setup.ads_sens}</span>
               </div>
             )}
             {setup.vertical_multiplier != null && (
               <div className="text-center">
                 <span className="text-sm text-white/40 block mb-1">Vertical</span>
-                <span className="text-sm text-cloud-white font-medium">{setup.vertical_multiplier}</span>
+                <span className="text-sm text-text-secondary">{setup.vertical_multiplier}</span>
               </div>
             )}
           </div>
@@ -164,7 +164,7 @@ export default async function ProfilePage({ params }: PageProps) {
               {scopes.map(s => (
                 <div key={s.label} className="rounded-xl bg-white/5 border border-white/5 px-3 py-1.5 text-sm">
                   <span className="text-white/40">{s.label}:</span>{' '}
-                  <span className="text-cloud-white font-medium">{s.value}</span>
+                  <span className="text-text-secondary">{s.value}</span>
                 </div>
               ))}
             </div>
@@ -183,7 +183,7 @@ export default async function ProfilePage({ params }: PageProps) {
             {gear.map(g => (
               <div key={g.label} className="flex justify-between text-sm">
                 <span className="text-white/40">{g.label}</span>
-                <span className="text-cloud-white">{g.value}</span>
+                <span className="text-text-secondary">{g.value}</span>
               </div>
             ))}
           </div>
@@ -197,7 +197,7 @@ export default async function ProfilePage({ params }: PageProps) {
             <Lightbulb size={18} className="text-fairy-gold" />
             Notes
           </h2>
-          <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">{setup.notes}</p>
+          <p className="text-text-secondary text-sm whitespace-pre-wrap">{setup.notes}</p>
         </div>
       )}
 

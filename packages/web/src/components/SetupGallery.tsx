@@ -36,7 +36,7 @@ export function SetupGallery({ setups, total, page, totalPages, tag }: SetupGall
           {page > 1 && (
             <a
               href={`/?page=${page - 1}${tag ? `&tag=${tag}` : ''}`}
-              className="bg-white/5 border border-white/10 rounded-xl px-5 py-2.5 text-white/60 hover:text-mist-blue hover:border-mist-blue/30 transition-all text-sm"
+              className="bg-white/5 border border-white/10 rounded-xl px-5 py-2.5 text-white/60 hover:text-white hover:border-white/20 transition-all text-sm"
             >
               ◀ 이전
             </a>
@@ -47,7 +47,7 @@ export function SetupGallery({ setups, total, page, totalPages, tag }: SetupGall
           {page < totalPages && (
             <a
               href={`/?page=${page + 1}${tag ? `&tag=${tag}` : ''}`}
-              className="bg-white/5 border border-white/10 rounded-xl px-5 py-2.5 text-white/60 hover:text-mist-blue hover:border-mist-blue/30 transition-all text-sm"
+              className="bg-white/5 border border-white/10 rounded-xl px-5 py-2.5 text-white/60 hover:text-white hover:border-white/20 transition-all text-sm"
             >
               다음 ▶
             </a>

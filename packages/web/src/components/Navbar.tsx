@@ -9,7 +9,7 @@ export function Navbar() {
 
   const links = [
     { href: '/', label: 'Gallery' },
-    { href: '/setup/me', label: 'My Setup' },
+    { href: '/my', label: 'My Setup' },
   ];
 
   return (
@@ -27,7 +27,7 @@ export function Navbar() {
                 className={`text-sm transition-colors ${
                   pathname === link.href
                     ? 'bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-cloud-white'
-                    : 'text-white/50 hover:text-mist-blue px-4 py-1.5'
+                    : 'text-white/50 hover:text-white/80 px-4 py-1.5'
                 }`}
               >
                 {link.label}

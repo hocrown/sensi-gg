@@ -37,7 +37,7 @@ export default async function SetupDetailPage({
       {/* Back button */}
       <Link
         href="/"
-        className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-sm text-white/60 hover:text-mist-blue hover:border-mist-blue/30 transition-all mb-6"
+        className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-sm text-white/60 hover:text-white hover:border-white/20 transition-all mb-6"
       >
         &larr; Gallery
       </Link>
