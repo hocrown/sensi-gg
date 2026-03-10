@@ -1,13 +1,9 @@
 import 'dotenv/config';
 import { REST, Routes } from 'discord.js';
-import command from '../src/commands/세팅등록.js';
-import editCommand from '../src/commands/세팅수정.js';
-import searchCommand from '../src/commands/세팅검색.js';
-import deleteCommand from '../src/commands/세팅삭제.js';
 import setupCommand from '../src/commands/setup.js';
 import serverStatsCommand from '../src/commands/server-stats.js';
 
-const commands = [command.data.toJSON(), editCommand.data.toJSON(), searchCommand.data.toJSON(), deleteCommand.data.toJSON(), setupCommand.data.toJSON(), serverStatsCommand.data.toJSON()];
+const commands = [setupCommand.data.toJSON(), serverStatsCommand.data.toJSON()];
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 

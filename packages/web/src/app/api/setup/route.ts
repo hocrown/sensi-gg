@@ -51,6 +51,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'general_sens must be between 1 and 100' }, { status: 400 });
   }
 
+  // Server-side string length validation (DA P0 fix)
+  const MAX_STRING_LENGTH = 200;
+  const MAX_NOTES_LENGTH = 500;
+  const stringFields = { mouse, keyboard, headset, mousepad, monitor };
+  for (const [key, val] of Object.entries(stringFields)) {
+    if (val && typeof val === 'string' && val.length > MAX_STRING_LENGTH) {
+      return NextResponse.json({ error: `${key} must be ${MAX_STRING_LENGTH} characters or less` }, { status: 400 });
+    }
+  }
+  if (notes && typeof notes === 'string' && notes.length > MAX_NOTES_LENGTH) {
+    return NextResponse.json({ error: `notes must be ${MAX_NOTES_LENGTH} characters or less` }, { status: 400 });
+  }
+
   const row = {
     profile_id: user.id,
     dpi,

@@ -16,7 +16,7 @@ export default function RootLayout({
     <html lang="ko">
       <body className="min-h-screen bg-night-indigo text-cloud-white font-sans antialiased">
         <Navbar />
-        <main className="max-w-6xl mx-auto px-4 py-8">
+        <main className="px-4 py-8">
           {children}
         </main>
       </body>

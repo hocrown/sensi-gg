@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #2B2F5A;
-  color: #EAF0FF;
-}
-
 @layer base {
   :root {
     --font-sans: 'Pretendard', system-ui, -apple-system, sans-serif;

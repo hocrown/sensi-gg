@@ -2,8 +2,7 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { getSetupByDiscordUserId, getSetupByHandle, getProfileByDiscordUserId } from '../repositories/supabaseRepo.js';
 import { WEB_URL } from '../config.js';
-
-const EMBED_COLOR = 0xF4D27A;
+import { EMBED_COLOR } from '@sensi-gg/shared';
 
 /**
  * Build a setup summary embed for a given combined profile+setup result.

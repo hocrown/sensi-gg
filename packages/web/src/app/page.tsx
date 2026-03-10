@@ -26,22 +26,22 @@ export default async function Home({
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div>
+    <div className="max-w-6xl mx-auto">
       {/* Hero */}
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold mb-3">
-          <span className="text-fairy-gold">SENSI</span>
-          <span className="text-text-muted">.GG</span>
+      <div className="text-center mb-12 pt-8">
+        <h1 className="text-5xl font-bold mb-4 tracking-tight">
+          <span className="text-fairy-gold drop-shadow-[0_0_20px_rgba(244,210,122,0.3)]">SENSI</span>
+          <span className="text-white/30">.GG</span>
         </h1>
-        <p className="text-text-secondary text-lg">
-          PUBG 감도 · 장비 공유 플랫폼
+        <p className="text-white/50 text-lg max-w-md mx-auto">
+          Discover and share your perfect sensitivity settings
         </p>
       </div>
 
       <div className="flex justify-end mb-6">
         <Link
           href="/setup/me"
-          className="px-4 py-2 rounded-lg bg-fairy-gold/20 text-fairy-gold border border-fairy-gold/30 text-sm hover:bg-fairy-gold/30 transition-colors"
+          className="bg-fairy-gold/10 border border-fairy-gold/30 text-fairy-gold rounded-xl px-5 py-2.5 font-medium hover:bg-fairy-gold/20 transition-all shadow-[0_0_15px_rgba(244,210,122,0.1)]"
         >
           + 내 세팅 등록
         </Link>

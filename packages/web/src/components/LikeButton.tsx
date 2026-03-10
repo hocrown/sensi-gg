@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { createSupabaseBrowser } from '@/lib/supabase/client';
 
 interface LikeButtonProps {
   setupId: string;
@@ -19,9 +18,12 @@ export function LikeButton({ setupId, initialCount, initialLiked, isLoggedIn }: 
     if (!isLoggedIn) return;
     if (loading) return;
 
+    const prevLiked = liked;
+    const prevCount = count;
+
     // Optimistic update
-    setLiked(!liked);
-    setCount(prev => liked ? prev - 1 : prev + 1);
+    setLiked(!prevLiked);
+    setCount(prevLiked ? prevCount - 1 : prevCount + 1);
     setLoading(true);
 
     try {
@@ -33,16 +35,16 @@ export function LikeButton({ setupId, initialCount, initialLiked, isLoggedIn }: 
 
       if (!res.ok) {
         // Revert optimistic update
-        setLiked(liked);
-        setCount(count);
+        setLiked(prevLiked);
+        setCount(prevCount);
       } else {
         const data = await res.json();
         setLiked(data.liked);
         setCount(data.totalLikes);
       }
     } catch {
-      setLiked(liked);
-      setCount(count);
+      setLiked(prevLiked);
+      setCount(prevCount);
     } finally {
       setLoading(false);
     }

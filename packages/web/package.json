@@ -12,6 +12,7 @@
     "@sensi-gg/shared": "*",
     "@supabase/ssr": "^0.5.x",
     "@supabase/supabase-js": "^2.x",
+    "lucide-react": "^0.577.0",
     "next": "^15.x",
     "react": "^19.x",
     "react-dom": "^19.x"

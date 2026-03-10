@@ -4,6 +4,9 @@ import { initDB } from './supabase.js';
 import { startRealtimeListener, recoverPending } from './sync.js';
 import setupCommand from './commands/setup.js';
 import serverStatsCommand from './commands/server-stats.js';
+import { handleSearchButton, handleLikeButton, handleDeleteButton } from './handlers/buttonHandler.js';
+import { handleSelectMenu } from './handlers/selectMenu.js';
+import { handleModal, handleEditModal } from './handlers/modal.js';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -23,16 +26,29 @@ client.once(Events.ClientReady, async () => {
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isChatInputCommand()) {
-      // Legacy Forum-as-DB commands — deprecated after web-first migration (002)
-      if (['세팅등록', '세팅수정', '세팅검색', '세팅삭제'].includes(interaction.commandName)) {
-        await interaction.reply({
-          content: `이 명령어는 웹 전환으로 더 이상 사용되지 않습니다.\n세팅 등록/수정: ${process.env.WEB_URL || 'https://sensi.gg'}/setup/me`,
-          ephemeral: true,
-        });
-      } else if (interaction.commandName === 'setup') {
+      if (interaction.commandName === 'setup') {
         await setupCommand.execute(interaction);
       } else if (interaction.commandName === 'server-stats') {
         await serverStatsCommand.execute(interaction);
+      }
+    } else if (interaction.isButton()) {
+      const id = interaction.customId;
+      if (id.startsWith('search_prev_') || id.startsWith('search_next_')) {
+        await handleSearchButton(interaction);
+      } else if (id.startsWith('setup_like_')) {
+        await handleLikeButton(interaction);
+      } else if (id === 'setup_delete_confirm' || id === 'setup_delete_cancel') {
+        await handleDeleteButton(interaction, client);
+      }
+    } else if (interaction.isStringSelectMenu()) {
+      if (interaction.customId === 'setup_select' || interaction.customId === 'setup_edit_select') {
+        await handleSelectMenu(interaction);
+      }
+    } else if (interaction.isModalSubmit()) {
+      if (interaction.customId.startsWith('setup_edit_modal_')) {
+        await handleEditModal(interaction, client);
+      } else if (interaction.customId.startsWith('setup_modal_')) {
+        await handleModal(interaction, client);
       }
     }
   } catch (error) {

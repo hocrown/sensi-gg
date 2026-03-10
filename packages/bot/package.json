@@ -5,8 +5,7 @@
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node scripts/deploy-commands.js",
-    "generate-assets": "node scripts/generate-assets.js",
-    "migrate": "node scripts/migrate-sqlite.js"
+    "generate-assets": "node scripts/generate-assets.js"
   },
   "dependencies": {
     "@google/genai": "^1.x",

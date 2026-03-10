@@ -2,19 +2,11 @@ import { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, Butto
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { SECTIONS, SECTION_LABELS, EMBED_COLOR } from '@sensi-gg/shared';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ASSETS_DIR = path.resolve(__dirname, '..', 'assets');
-
-const EMBED_COLOR = 0xF4D27A; // Fairy Light Gold — 전구 포인트 컬러바
-
-const SECTIONS = {
-  sens: { label: '감도', emoji: '🎯' },
-  gear: { label: '장비', emoji: '⌨️' },
-  game: { label: '그래픽', emoji: '🖥️' },
-  tips: { label: '꿀팁', emoji: '💡' },
-};
 
 // ---------------------------------------------------------------------------
 // Structured renderers
@@ -198,12 +190,6 @@ export function createSetupEmbed(user, data, selectedSections) {
   return { embed, files, components };
 }
 
-const SECTION_LABELS = {
-  sens: '🎯 감도',
-  gear: '⌨️ 장비',
-  game: '🖥️ 그래픽',
-  tips: '💡 꿀팁',
-};
 
 /**
  * Create an embed with search results and pagination buttons.

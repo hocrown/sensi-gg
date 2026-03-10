@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { UserAvatar } from '@/components/UserAvatar';
 import { CopyLinkButton } from '@/components/CopyLinkButton';
+import { Crosshair, Mouse, Monitor, Lightbulb } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ handle: string }>;
@@ -44,6 +45,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+const glassCard = {
+  className: 'rounded-3xl border border-white/10 p-6 md:p-8',
+  style: { background: 'rgba(26,26,58,0.4)', boxShadow: '0px 25px 50px -12px rgba(0,0,0,0.25)' } as React.CSSProperties,
+};
+
 export default async function ProfilePage({ params }: PageProps) {
   const { handle } = await params;
   const supabase = await createSupabaseServer();
@@ -84,68 +90,81 @@ export default async function ProfilePage({ params }: PageProps) {
   ].filter(g => g.value);
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <UserAvatar
-          src={profile.avatar_url}
-          username={profile.display_name}
-          size={64}
-        />
-        <div>
-          <h1 className="text-2xl font-bold text-cloud-white">
-            {profile.display_name}
-          </h1>
-          <p className="text-text-muted text-sm">@{profile.handle}</p>
+    <div className="max-w-4xl mx-auto">
+      {/* Mini Hero Banner */}
+      <div className="relative w-full rounded-3xl overflow-hidden mb-8" style={{ minHeight: '180px' }}>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #1a1a4a 0%, #2B2F5A 25%, #3A4A86 50%, #2a2050 75%, #1a1030 100%)' }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 60% 80% at 80% 20%, rgba(175,198,255,0.18) 0%, transparent 60%), radial-gradient(ellipse 40% 60% at 20% 80%, rgba(244,210,122,0.12) 0%, transparent 50%)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(26,26,58,0.85) 0%, transparent 60%)' }} />
+
+        {/* User info at bottom-left */}
+        <div className="absolute bottom-5 left-6 flex items-end gap-4">
+          <UserAvatar
+            src={profile.avatar_url}
+            username={profile.display_name}
+            size={56}
+            className="ring-2 ring-white/20"
+          />
+          <div>
+            <h1 className="text-3xl font-bold text-cloud-white drop-shadow-lg">
+              {profile.display_name}
+            </h1>
+            <p className="text-sm text-white/50">@{profile.handle}</p>
+          </div>
         </div>
-        <div className="ml-auto">
+
+        {/* Copy button top-right */}
+        <div className="absolute top-5 right-5">
           <CopyLinkButton />
         </div>
       </div>
 
       {/* Sensitivity */}
-      <div className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6 mb-4">
-        <h2 className="text-fairy-gold font-semibold text-lg mb-4">Sensitivity</h2>
+      <div className={glassCard.className + ' mb-4'} style={glassCard.style}>
+        <h2 className="flex items-center gap-3 text-lg font-semibold text-cloud-white mb-5">
+          <Crosshair size={18} className="text-fairy-gold" />
+          Sensitivity
+        </h2>
         <div className="grid grid-cols-3 gap-4">
-          <div>
-            <span className="text-xs text-text-muted block">DPI</span>
-            <span className="text-xl font-bold text-cloud-white">{setup.dpi}</span>
+          <div className="rounded-2xl bg-white/5 border border-white/5 px-4 py-3 text-center">
+            <span className="text-sm text-white/40 block mb-1">DPI</span>
+            <span className="text-2xl font-bold text-cloud-white">{setup.dpi}</span>
           </div>
-          <div>
-            <span className="text-xs text-text-muted block">In-game</span>
-            <span className="text-xl font-bold text-cloud-white">{setup.general_sens}</span>
+          <div className="rounded-2xl bg-white/5 border border-white/5 px-4 py-3 text-center">
+            <span className="text-sm text-white/40 block mb-1">In-game</span>
+            <span className="text-2xl font-bold text-cloud-white">{setup.general_sens}</span>
           </div>
-          <div>
-            <span className="text-xs text-text-muted block">eDPI</span>
-            <span className="text-xl font-bold text-fairy-gold">{edpi.toLocaleString()}</span>
+          <div className="rounded-2xl bg-white/5 border border-white/5 px-4 py-3 text-center">
+            <span className="text-sm text-white/40 block mb-1">eDPI</span>
+            <span className="text-2xl font-bold text-fairy-gold">{edpi.toLocaleString()}</span>
           </div>
         </div>
 
-        {(setup.ads_sens || setup.vertical_multiplier) && (
-          <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-deep-periwinkle/30">
+        {(setup.ads_sens != null || setup.vertical_multiplier != null) && (
+          <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/5">
             {setup.ads_sens != null && (
-              <div>
-                <span className="text-xs text-text-muted block">ADS</span>
-                <span className="text-sm text-text-secondary">{setup.ads_sens}</span>
+              <div className="text-center">
+                <span className="text-sm text-white/40 block mb-1">ADS</span>
+                <span className="text-sm text-cloud-white font-medium">{setup.ads_sens}</span>
               </div>
             )}
             {setup.vertical_multiplier != null && (
-              <div>
-                <span className="text-xs text-text-muted block">Vertical</span>
-                <span className="text-sm text-text-secondary">{setup.vertical_multiplier}</span>
+              <div className="text-center">
+                <span className="text-sm text-white/40 block mb-1">Vertical</span>
+                <span className="text-sm text-cloud-white font-medium">{setup.vertical_multiplier}</span>
               </div>
             )}
           </div>
         )}
 
         {scopes.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-deep-periwinkle/30">
-            <span className="text-xs text-text-muted block mb-2">Scopes</span>
+          <div className="mt-4 pt-4 border-t border-white/5">
+            <span className="text-sm text-white/40 block mb-3">Scopes</span>
             <div className="flex flex-wrap gap-3">
               {scopes.map(s => (
-                <div key={s.label} className="text-sm">
-                  <span className="text-text-muted">{s.label}:</span>{' '}
-                  <span className="text-text-secondary">{s.value}</span>
+                <div key={s.label} className="rounded-xl bg-white/5 border border-white/5 px-3 py-1.5 text-sm">
+                  <span className="text-white/40">{s.label}:</span>{' '}
+                  <span className="text-cloud-white font-medium">{s.value}</span>
                 </div>
               ))}
             </div>
@@ -155,13 +174,16 @@ export default async function ProfilePage({ params }: PageProps) {
 
       {/* Gear */}
       {gear.length > 0 && (
-        <div className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6 mb-4">
-          <h2 className="text-fairy-gold font-semibold text-lg mb-4">Gear</h2>
-          <div className="space-y-2">
+        <div className={glassCard.className + ' mb-4'} style={glassCard.style}>
+          <h2 className="flex items-center gap-3 text-lg font-semibold text-cloud-white mb-5">
+            <Mouse size={18} className="text-fairy-gold" />
+            Gear
+          </h2>
+          <div className="space-y-3">
             {gear.map(g => (
               <div key={g.label} className="flex justify-between text-sm">
-                <span className="text-text-muted">{g.label}</span>
-                <span className="text-text-secondary">{g.value}</span>
+                <span className="text-white/40">{g.label}</span>
+                <span className="text-cloud-white">{g.value}</span>
               </div>
             ))}
           </div>
@@ -170,14 +192,17 @@ export default async function ProfilePage({ params }: PageProps) {
 
       {/* Notes */}
       {setup.notes && (
-        <div className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6 mb-4">
-          <h2 className="text-fairy-gold font-semibold text-lg mb-3">Notes</h2>
-          <p className="text-text-secondary text-sm whitespace-pre-wrap">{setup.notes}</p>
+        <div className={glassCard.className + ' mb-4'} style={glassCard.style}>
+          <h2 className="flex items-center gap-3 text-lg font-semibold text-cloud-white mb-5">
+            <Lightbulb size={18} className="text-fairy-gold" />
+            Notes
+          </h2>
+          <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">{setup.notes}</p>
         </div>
       )}
 
       {/* Updated at */}
-      <p className="text-xs text-text-muted text-center mt-6">
+      <p className="text-xs text-white/30 text-center mt-6">
         Updated {new Date(setup.updated_at).toLocaleDateString('ko-KR', {
           year: 'numeric',
           month: 'long',

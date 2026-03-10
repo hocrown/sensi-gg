@@ -4,14 +4,14 @@ import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="text-center py-20">
-      <div className="text-6xl mb-4">404</div>
-      <h2 className="text-xl text-text-secondary mb-4">페이지를 찾을 수 없습니다</h2>
+    <div className="flex flex-col items-center justify-center py-20">
+      <div className="text-7xl font-bold text-white/10 mb-4">404</div>
+      <p className="text-white/50 text-lg mb-6">Page not found</p>
       <Link
         href="/"
-        className="text-fairy-gold hover:text-fairy-gold/80 transition-colors"
+        className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-mist-blue hover:border-mist-blue/30 transition-all text-sm"
       >
-        ← 홈으로 돌아가기
+        &larr; Back to Gallery
       </Link>
     </div>
   );
