@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Navbar } from '@/components/Navbar';
+import { LangProvider } from '@/lib/i18n';
+import { ThemeProvider } from '@/lib/theme';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -15,10 +17,14 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="min-h-screen bg-night-indigo text-cloud-white font-sans antialiased">
-        <Navbar />
-        <main className="px-4 py-8">
-          {children}
-        </main>
+        <ThemeProvider>
+          <LangProvider>
+            <Navbar />
+            <main className="px-4 py-8">
+              {children}
+            </main>
+          </LangProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { UserAvatar } from '@/components/UserAvatar';
 import { CopyLinkButton } from '@/components/CopyLinkButton';
+import { calculateEdpi } from '@sensi-gg/shared';
 import { Crosshair, Mouse, Monitor, Lightbulb } from 'lucide-react';
 
 interface PageProps {
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .eq('profile_id', profile.id)
     .single();
 
-  const edpi = setup ? Math.round(setup.dpi * setup.general_sens) : null;
+  const edpi = setup ? calculateEdpi(setup.dpi, setup.general_sens) : null;
 
   return {
     title: `${profile.display_name}의 PUBG 세팅 - SENSI.GG`,
@@ -70,7 +71,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   if (!setup) notFound();
 
-  const edpi = Math.round(setup.dpi * setup.general_sens);
+  const edpi = calculateEdpi(setup.dpi, setup.general_sens);
 
   const scopes = [
     { label: '2x', value: setup.scope_2x },

@@ -1,38 +1,83 @@
 // @sensi-gg/shared — Type definitions (JSDoc)
-// Since the bot uses plain JS, we use JSDoc typedefs instead of TypeScript.
-
-/**
- * @typedef {Object} Setup
- * @property {string} id - UUID (Supabase) or INTEGER (legacy SQLite)
- * @property {string} user_id - profiles.id UUID
- * @property {string} guild_id - Discord guild ID
- * @property {string|null} thread_id - Discord forum thread ID
- * @property {string|null} sens - 감도 세팅
- * @property {string|null} gear - 장비 정보
- * @property {string|null} game - 그래픽 설정
- * @property {string|null} tips - 꿀팁
- * @property {'bot'|'web'} source - 생성 출처
- * @property {'synced'|'pending_thread'|'pending_delete'} sync_status
- * @property {string} created_at
- * @property {string} updated_at
- */
+// Migration 002 schema — profiles, setups, servers, server_claims, server_memberships
 
 /**
  * @typedef {Object} Profile
  * @property {string} id - UUID
  * @property {string} discord_id - Discord user ID
- * @property {string} username - Discord username
+ * @property {string} handle - unique handle (lowercase)
+ * @property {string} display_name - display name
  * @property {string|null} avatar_url - Discord avatar URL
  * @property {string} created_at
  * @property {string} updated_at
  */
 
 /**
- * @typedef {Object} Like
+ * @typedef {Object} Setup
  * @property {string} id - UUID
- * @property {string} user_id - profiles.id UUID
- * @property {string} setup_id - setups.id UUID
+ * @property {string} profile_id - profiles.id UUID
+ * @property {number} dpi
+ * @property {number} general_sens
+ * @property {number|null} vertical_multiplier
+ * @property {number|null} ads_sens
+ * @property {number|null} scope_2x
+ * @property {number|null} scope_3x
+ * @property {number|null} scope_4x
+ * @property {number|null} scope_6x
+ * @property {number|null} scope_8x
+ * @property {number|null} scope_15x
+ * @property {string|null} mouse
+ * @property {string|null} keyboard
+ * @property {string|null} headset
+ * @property {string|null} mousepad
+ * @property {string|null} monitor
+ * @property {string|null} monitor_settings
+ * @property {string|null} notes
  * @property {string} created_at
+ * @property {string} updated_at
+ */
+
+/**
+ * @typedef {Object} Server
+ * @property {string} id - UUID
+ * @property {string} slug - unique URL slug
+ * @property {string} name - server display name
+ * @property {string|null} guild_id - Discord guild ID
+ * @property {string|null} icon_url
+ * @property {string|null} owner_discord_id
+ * @property {number|null} member_count
+ * @property {boolean} is_public
+ * @property {string|null} join_code
+ * @property {string} created_at
+ * @property {string} updated_at
+ */
+
+/**
+ * @typedef {Object} ServerClaim
+ * @property {string} id - UUID
+ * @property {string} server_id - servers.id
+ * @property {string} profile_id - profiles.id (claimer)
+ * @property {'owner'|'admin'} role
+ * @property {string} created_at
+ */
+
+/**
+ * @typedef {Object} ServerMembership
+ * @property {string} id - UUID
+ * @property {string} server_id - servers.id
+ * @property {string} profile_id - profiles.id
+ * @property {string} created_at
+ */
+
+/** @typedef {{ name: string; count: number }} GearItem */
+
+/**
+ * @typedef {Object} ServerStats
+ * @property {{ slug: string; name: string; memberCount: number; lastUpdateAt: string|null }} server
+ * @property {Array<{ dpi: number; count: number; ratio: number }>} dpiDistribution
+ * @property {{ bands: { low: number; mid: number; high: number }; byDpi: Array<{ dpi: number; total: number; low: number; mid: number; high: number }> }} sensitivityBands
+ * @property {{ dpi: number; p25: number; p50: number; p75: number }} edpiQuantilesTopDpi
+ * @property {{ mouse: GearItem[]; keyboard: GearItem[]; headset: GearItem[] }} gearTop
  */
 
 export {};

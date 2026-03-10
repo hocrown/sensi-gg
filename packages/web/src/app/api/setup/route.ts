@@ -24,6 +24,7 @@ export async function GET() {
 }
 
 // POST /api/setup — upsert setup (auth required)
+// Supports tab-based partial updates: body.tab = 'sens' | 'gear' | 'tips'
 export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
@@ -33,57 +34,83 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const {
-    dpi, general_sens, vertical_multiplier, ads_sens,
-    scope_2x, scope_3x, scope_4x, scope_6x, scope_8x, scope_15x,
-    mouse, keyboard, headset, mousepad, monitor, notes,
-  } = body;
+  const tab = body.tab as string | undefined;
 
-  if (!dpi || !general_sens) {
-    return NextResponse.json({ error: 'dpi and general_sens are required' }, { status: 400 });
+  // Build row with only the fields for the given tab
+  const row: Record<string, unknown> = { profile_id: user.id };
+
+  if (!tab || tab === 'sens') {
+    const { dpi, general_sens } = body;
+
+    if (!dpi || !general_sens) {
+      return NextResponse.json({ error: 'dpi and general_sens are required' }, { status: 400 });
+    }
+    if (typeof dpi !== 'number' || dpi < 100 || dpi > 6400) {
+      return NextResponse.json({ error: 'dpi must be between 100 and 6400' }, { status: 400 });
+    }
+    if (typeof general_sens !== 'number' || general_sens < 1 || general_sens > 100) {
+      return NextResponse.json({ error: 'general_sens must be between 1 and 100' }, { status: 400 });
+    }
+
+    row.dpi = dpi;
+    row.general_sens = general_sens;
+    row.vertical_multiplier = body.vertical_multiplier ?? null;
+    row.ads_sens = body.ads_sens ?? null;
+    row.scope_2x = body.scope_2x ?? null;
+    row.scope_3x = body.scope_3x ?? null;
+    row.scope_4x = body.scope_4x ?? null;
+    row.scope_6x = body.scope_6x ?? null;
+    row.scope_8x = body.scope_8x ?? null;
+    row.scope_15x = body.scope_15x ?? null;
   }
 
-  if (typeof dpi !== 'number' || dpi < 100 || dpi > 6400) {
-    return NextResponse.json({ error: 'dpi must be between 100 and 6400' }, { status: 400 });
+  if (!tab || tab === 'gear') {
+    row.mouse = body.mouse || null;
+    row.keyboard = body.keyboard || null;
+    row.headset = body.headset || null;
+    row.mousepad = body.mousepad || null;
+    row.monitor = body.monitor || null;
+    row.monitor_settings = body.monitor_settings || null;
   }
 
-  if (typeof general_sens !== 'number' || general_sens < 1 || general_sens > 100) {
-    return NextResponse.json({ error: 'general_sens must be between 1 and 100' }, { status: 400 });
+  if (!tab || tab === 'tips') {
+    row.notes = body.notes || null;
   }
 
-  // Server-side string length validation (DA P0 fix)
-  const MAX_STRING_LENGTH = 200;
-  const MAX_NOTES_LENGTH = 500;
-  const stringFields = { mouse, keyboard, headset, mousepad, monitor };
-  for (const [key, val] of Object.entries(stringFields)) {
-    if (val && typeof val === 'string' && val.length > MAX_STRING_LENGTH) {
-      return NextResponse.json({ error: `${key} must be ${MAX_STRING_LENGTH} characters or less` }, { status: 400 });
+  // For partial updates (tab specified), check if setup exists first
+  if (tab) {
+    const { data: existing } = await supabase
+      .from('setups')
+      .select('id')
+      .eq('profile_id', user.id)
+      .single();
+
+    if (existing) {
+      // Update only the tab's fields
+      const { profile_id, ...updateFields } = row;
+      const { data: setup, error } = await supabase
+        .from('setups')
+        .update(updateFields)
+        .eq('profile_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ setup });
+    }
+
+    // No existing setup — for gear/tips tab, need dpi/general_sens for initial insert
+    if (tab !== 'sens') {
+      return NextResponse.json(
+        { error: 'Please save Sensitivity settings first' },
+        { status: 400 }
+      );
     }
   }
-  if (notes && typeof notes === 'string' && notes.length > MAX_NOTES_LENGTH) {
-    return NextResponse.json({ error: `notes must be ${MAX_NOTES_LENGTH} characters or less` }, { status: 400 });
-  }
 
-  const row = {
-    profile_id: user.id,
-    dpi,
-    general_sens,
-    vertical_multiplier: vertical_multiplier ?? null,
-    ads_sens: ads_sens ?? null,
-    scope_2x: scope_2x ?? null,
-    scope_3x: scope_3x ?? null,
-    scope_4x: scope_4x ?? null,
-    scope_6x: scope_6x ?? null,
-    scope_8x: scope_8x ?? null,
-    scope_15x: scope_15x ?? null,
-    mouse: mouse || null,
-    keyboard: keyboard || null,
-    headset: headset || null,
-    mousepad: mousepad || null,
-    monitor: monitor || null,
-    notes: notes || null,
-  };
-
+  // Full upsert (no tab specified, or first-time sens save)
   const { data: setup, error } = await supabase
     .from('setups')
     .upsert(row, { onConflict: 'profile_id' })

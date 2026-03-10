@@ -40,19 +40,6 @@ export const LIMITS = {
   SEARCH_PAGE_SIZE: 5,
 };
 
-/** 동기화 상태 */
-export const SYNC_STATUS = /** @type {const} */ ({
-  SYNCED: 'synced',
-  PENDING_THREAD: 'pending_thread',
-  PENDING_DELETE: 'pending_delete',
-});
-
-/** 세팅 출처 */
-export const SOURCE = /** @type {const} */ ({
-  BOT: 'bot',
-  WEB: 'web',
-});
-
 /** eDPI 감도 밴드 경계값 */
 export const SENSITIVITY_BANDS = /** @type {const} */ ({
   low: 280,

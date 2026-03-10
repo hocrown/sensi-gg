@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { ChevronDown, Check, Plus } from 'lucide-react';
-
-type Lang = 'EN' | 'KR';
+import { useLang } from '@/lib/i18n';
 
 export function SetupHeaderControls() {
-  const [lang, setLang] = useState<Lang>('EN');
+  const { lang, setLang } = useLang();
   const [profileOpen, setProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

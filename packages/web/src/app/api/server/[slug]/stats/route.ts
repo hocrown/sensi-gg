@@ -1,9 +1,6 @@
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { percentile, topCounts } from '@/lib/stats';
-
-const SENSITIVITY_BANDS = { low: 280, mid: 380 } as const;
-const STATS_CACHE_TTL_MS = 60_000;
+import { SENSITIVITY_BANDS, STATS_CACHE_TTL_MS, percentile, topCounts } from '@sensi-gg/shared';
 
 // Simple in-memory cache (single instance — good enough for MVP)
 const cache = new Map<string, { data: object; expires: number }>();
@@ -16,7 +13,7 @@ function getCached(key: string) {
 }
 
 function setCached(key: string, data: object) {
-  cache.set(key, { data, expires: Date.now() + STATS_CACHE_TTL_MS });
+  cache.set(key, { data, expires: Date.now() + (STATS_CACHE_TTL_MS as number) });
 }
 
 export async function GET(
@@ -44,60 +41,109 @@ export async function GET(
     return NextResponse.json({ error: 'Server is not public' }, { status: 404 });
   }
 
-  // Fetch all member setups via the server_stats_raw view
+  // Fetch all member setups via the server_stats_raw view (include profile_id for lastUpdateAt)
   const { data: rows } = await supabase
     .from('server_stats_raw')
-    .select('dpi, general_sens, edpi, mouse, keyboard, headset')
+    .select('profile_id, dpi, general_sens, edpi, mouse, keyboard, headset')
     .eq('server_id', server.id);
 
   const stats = rows || [];
   const memberCount = stats.length;
 
-  // DPI distribution
+  // Get lastUpdateAt from setups for this server's members
+  let lastUpdateAt: string | null = null;
+  if (memberCount > 0) {
+    const profileIds = stats.map((r) => r.profile_id as string);
+    const { data: lastSetup } = await supabase
+      .from('setups')
+      .select('updated_at')
+      .in('profile_id', profileIds)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+    lastUpdateAt = (lastSetup as { updated_at: string } | null)?.updated_at ?? null;
+  }
+
+  // DPI distribution with ratio
   const dpiCounts: Record<number, number> = {};
   for (const row of stats) {
     dpiCounts[row.dpi] = (dpiCounts[row.dpi] || 0) + 1;
   }
   const dpiDistribution = Object.entries(dpiCounts)
-    .map(([dpi, count]) => ({ dpi: Number(dpi), count }))
+    .map(([dpi, count]) => ({
+      dpi: Number(dpi),
+      count,
+      ratio: memberCount > 0 ? Math.round((count / memberCount) * 1000) / 1000 : 0,
+    }))
     .sort((a, b) => a.dpi - b.dpi);
 
-  // Sensitivity bands: low < 280, mid 280-379, high >= 380
+  // Sensitivity bands overall + byDpi breakdown
   const bands = { low: 0, mid: 0, high: 0 };
-  const edpiSorted: number[] = [];
+  const byDpiMap: Record<number, { total: number; low: number; mid: number; high: number }> = {};
+
   for (const row of stats) {
     const edpi = Number(row.edpi);
+    const dpi = Number(row.dpi);
     if (edpi > 0) {
-      edpiSorted.push(edpi);
-      if (edpi < SENSITIVITY_BANDS.low) bands.low++;
-      else if (edpi < SENSITIVITY_BANDS.mid) bands.mid++;
-      else bands.high++;
+      if (!byDpiMap[dpi]) byDpiMap[dpi] = { total: 0, low: 0, mid: 0, high: 0 };
+      byDpiMap[dpi].total++;
+      if (edpi < SENSITIVITY_BANDS.low) {
+        bands.low++;
+        byDpiMap[dpi].low++;
+      } else if (edpi < SENSITIVITY_BANDS.mid) {
+        bands.mid++;
+        byDpiMap[dpi].mid++;
+      } else {
+        bands.high++;
+        byDpiMap[dpi].high++;
+      }
     }
   }
-  edpiSorted.sort((a, b) => a - b);
 
-  // eDPI percentiles
-  const edpiPercentiles = {
-    p25: percentile(edpiSorted, 25),
-    p50: percentile(edpiSorted, 50),
-    p75: percentile(edpiSorted, 75),
+  const byDpi = Object.entries(byDpiMap)
+    .map(([dpi, counts]) => ({ dpi: Number(dpi), ...counts }))
+    .sort((a, b) => a.dpi - b.dpi);
+
+  // TOP DPI = DPI with highest count
+  const topDpiEntry = dpiDistribution.length > 0
+    ? dpiDistribution.reduce((best, cur) => cur.count > best.count ? cur : best)
+    : null;
+  const topDpi = topDpiEntry?.dpi ?? 0;
+
+  // Percentiles for TOP DPI group only
+  const topDpiEdpi = stats
+    .filter((r) => Number(r.dpi) === topDpi && Number(r.edpi) > 0)
+    .map((r) => Number(r.edpi))
+    .sort((a, b) => a - b);
+
+  const edpiQuantilesTopDpi = {
+    dpi: topDpi,
+    p25: percentile(topDpiEdpi, 25),
+    p50: percentile(topDpiEdpi, 50),
+    p75: percentile(topDpiEdpi, 75),
   };
 
-  // Top gear (top 5 per category)
-  const topGear = {
+  // Top gear (top 5 per category, null/empty excluded by topCounts)
+  const gearTop = {
     mouse: topCounts(stats, 'mouse'),
     keyboard: topCounts(stats, 'keyboard'),
     headset: topCounts(stats, 'headset'),
   };
 
   const result = {
-    server: { slug: server.slug, name: server.name, member_count: memberCount },
-    stats: {
-      dpi_distribution: dpiDistribution,
-      sensitivity_bands: bands,
-      edpi_percentiles: edpiPercentiles,
-      top_gear: topGear,
+    server: {
+      slug: server.slug,
+      name: server.name,
+      memberCount,
+      lastUpdateAt,
     },
+    dpiDistribution,
+    sensitivityBands: {
+      bands,
+      byDpi,
+    },
+    edpiQuantilesTopDpi,
+    gearTop,
   };
 
   setCached(`stats:${slug}`, result);

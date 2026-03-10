@@ -40,8 +40,9 @@ export const FIELDS = {
     { key: 'monitor',     label: '모니터',     type: 'text',     required: false, placeholder: 'BenQ XL2546K' },
     { key: 'refreshRate', label: '주사율',     type: 'select',   required: false, options: ['60Hz', '144Hz', '165Hz', '240Hz', '360Hz', '500Hz', '기타'] },
     { key: 'resolution',  label: '해상도',     type: 'select',   required: false, options: ['1920×1080', '2560×1440', '1728×1080', '1600×900', '기타'] },
-    { key: 'headset',     label: '헤드셋',     type: 'text',     required: false },
-    { key: 'note',        label: '메모',       type: 'textarea', required: false, maxLength: 200 },
+    { key: 'headset',         label: '헤드셋',     type: 'text',     required: false },
+    { key: 'monitorSettings', label: '모니터 설정', type: 'textarea', required: false, placeholder: 'DyAc: Premium, Black eQualizer: 8, Color Vibrance: 12', maxLength: 300 },
+    { key: 'note',            label: '메모',       type: 'textarea', required: false, maxLength: 200 },
   ],
 
   game: [

@@ -1,16 +1,14 @@
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { percentile, topCounts } from '@/lib/stats';
+import { SENSITIVITY_BANDS, percentile, topCounts } from '@sensi-gg/shared';
+import { ServerStatsClient } from '@/components/ServerStatsClient';
 
 export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
-
-const SENSITIVITY_BANDS = { low: 280, mid: 380 } as const;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -26,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${server.name} - SENSI.GG`,
-    description: `${server.name} server stats on SENSI.GG`,
+    description: `${server.name} 서버 세팅 통계 on SENSI.GG`,
   };
 }
 
@@ -42,14 +40,45 @@ export default async function ServerPage({ params }: PageProps) {
 
   if (!server || !server.is_public) notFound();
 
-  // Fetch raw stats from the view
+  // Get user's server list for the server switcher
+  const { data: { user } } = await supabase.auth.getUser();
+  let userServers: { slug: string; name: string; icon_url: string | null }[] = [];
+
+  if (user) {
+    const { data: memberships } = await supabase
+      .from('server_memberships')
+      .select('servers(slug, name, icon_url)')
+      .eq('profile_id', user.id);
+
+    if (memberships) {
+      userServers = memberships
+        .map((m) => m.servers as unknown as { slug: string; name: string; icon_url: string | null } | null)
+        .filter((s): s is { slug: string; name: string; icon_url: string | null } => s !== null);
+    }
+  }
+
+  // Fetch raw stats from the view (include profile_id for lastUpdateAt lookup)
   const { data: rows } = await supabase
     .from('server_stats_raw')
-    .select('dpi, general_sens, edpi, mouse, keyboard, headset')
+    .select('profile_id, dpi, general_sens, edpi, mouse, keyboard, headset')
     .eq('server_id', server.id);
 
   const stats = rows || [];
   const memberCount = stats.length;
+
+  // Get lastUpdateAt from setups for this server's members
+  let lastUpdateAt: string | null = null;
+  if (memberCount > 0) {
+    const profileIds = stats.map((r) => r.profile_id as string);
+    const { data: lastSetup } = await supabase
+      .from('setups')
+      .select('updated_at')
+      .in('profile_id', profileIds)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+    lastUpdateAt = (lastSetup as { updated_at: string } | null)?.updated_at ?? null;
+  }
 
   // DPI distribution
   const dpiCounts: Record<number, number> = {};
@@ -60,24 +89,59 @@ export default async function ServerPage({ params }: PageProps) {
     .map(([dpi, count]) => ({ dpi: Number(dpi), count }))
     .sort((a, b) => a.dpi - b.dpi);
 
-  // Sensitivity bands
+  // Sensitivity bands overall + byDpi breakdown
   const bands = { low: 0, mid: 0, high: 0 };
-  const edpiSorted: number[] = [];
+  const byDpiMap: Record<number, { total: number; low: number; mid: number; high: number }> = {};
+
+  const edpiValues: number[] = [];
+
   for (const row of stats) {
     const edpi = Number(row.edpi);
+    const dpi = Number(row.dpi);
     if (edpi > 0) {
-      edpiSorted.push(edpi);
-      if (edpi < SENSITIVITY_BANDS.low) bands.low++;
-      else if (edpi < SENSITIVITY_BANDS.mid) bands.mid++;
-      else bands.high++;
+      edpiValues.push(edpi);
+      if (!byDpiMap[dpi]) byDpiMap[dpi] = { total: 0, low: 0, mid: 0, high: 0 };
+      byDpiMap[dpi].total++;
+      if (edpi < SENSITIVITY_BANDS.low) {
+        bands.low++;
+        byDpiMap[dpi].low++;
+      } else if (edpi < SENSITIVITY_BANDS.mid) {
+        bands.mid++;
+        byDpiMap[dpi].mid++;
+      } else {
+        bands.high++;
+        byDpiMap[dpi].high++;
+      }
     }
   }
-  edpiSorted.sort((a, b) => a - b);
 
-  const edpiPercentiles = {
-    p25: percentile(edpiSorted, 25),
-    p50: percentile(edpiSorted, 50),
-    p75: percentile(edpiSorted, 75),
+  const avgEdpi =
+    edpiValues.length > 0
+      ? edpiValues.reduce((sum, v) => sum + v, 0) / edpiValues.length
+      : null;
+
+  const byDpi = Object.entries(byDpiMap)
+    .map(([dpi, counts]) => ({ dpi: Number(dpi), ...counts }))
+    .sort((a, b) => a.dpi - b.dpi);
+
+  // TOP DPI = DPI with highest member count
+  const topDpiEntry = dpiDistribution.length > 0
+    ? dpiDistribution.reduce((best, cur) => cur.count > best.count ? cur : best)
+    : null;
+  const topDpi = topDpiEntry?.dpi ?? null;
+
+  // Percentiles for TOP DPI group only
+  const topDpiEdpi = topDpi !== null
+    ? stats
+        .filter((r) => Number(r.dpi) === topDpi && Number(r.edpi) > 0)
+        .map((r) => Number(r.edpi))
+        .sort((a, b) => a - b)
+    : [];
+
+  const edpiQuantiles = {
+    p25: percentile(topDpiEdpi, 25),
+    p50: percentile(topDpiEdpi, 50),
+    p75: percentile(topDpiEdpi, 75),
   };
 
   const topGear = {
@@ -86,125 +150,29 @@ export default async function ServerPage({ params }: PageProps) {
     headset: topCounts(stats, 'headset'),
   };
 
-  const hasData = memberCount > 0;
+  const lastUpdatedLabel = lastUpdateAt
+    ? new Date(lastUpdateAt).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : null;
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-cloud-white mb-2">{server.name}</h1>
-        <p className="text-text-muted text-sm">{memberCount} member{memberCount !== 1 ? 's' : ''} with setups</p>
-      </div>
-
-      {/* CTA */}
-      <Link
-        href="/setup/me"
-        className="block w-full text-center px-6 py-3 rounded-lg bg-fairy-gold text-night-indigo font-semibold text-sm hover:bg-fairy-gold/90 transition-colors mb-8"
-      >
-        Register my setup
-      </Link>
-
-      {!hasData ? (
-        <div className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-8 text-center">
-          <p className="text-text-muted text-sm">No setups registered yet.</p>
-          <p className="text-text-muted text-xs mt-1">Be the first to register your setup!</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* DPI Distribution */}
-          <section className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6">
-            <h2 className="text-fairy-gold font-semibold text-lg mb-4">DPI Distribution</h2>
-            <div className="space-y-2">
-              {dpiDistribution.map(({ dpi, count }) => {
-                const pct = Math.round((count / memberCount) * 100);
-                return (
-                  <div key={dpi} className="flex items-center gap-3">
-                    <span className="text-text-secondary text-sm w-16 text-right">{dpi}</span>
-                    <div className="flex-1 bg-night-indigo rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full bg-fairy-gold/70 rounded-full"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="text-text-muted text-xs w-12">{count} ({pct}%)</span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Sensitivity Bands */}
-          <section className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6">
-            <h2 className="text-fairy-gold font-semibold text-lg mb-4">
-              Sensitivity Bands
-              <span className="text-text-muted text-xs font-normal ml-2">
-                Low &lt;{SENSITIVITY_BANDS.low} eDPI · Mid {SENSITIVITY_BANDS.low}–{SENSITIVITY_BANDS.mid - 1} · High {SENSITIVITY_BANDS.mid}+
-              </span>
-            </h2>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: 'Low', value: bands.low, color: 'text-mist-blue' },
-                { label: 'Mid', value: bands.mid, color: 'text-fairy-gold' },
-                { label: 'High', value: bands.high, color: 'text-cloud-white' },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="text-center">
-                  <p className={`text-2xl font-bold ${color}`}>{value}</p>
-                  <p className="text-text-muted text-xs mt-1">{label}</p>
-                  <p className="text-text-muted text-xs">
-                    {memberCount > 0 ? Math.round((value / memberCount) * 100) : 0}%
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* eDPI Percentiles */}
-          <section className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6">
-            <h2 className="text-fairy-gold font-semibold text-lg mb-4">eDPI Percentiles</h2>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: 'p25', value: edpiPercentiles.p25 },
-                { label: 'p50 (median)', value: edpiPercentiles.p50 },
-                { label: 'p75', value: edpiPercentiles.p75 },
-              ].map(({ label, value }) => (
-                <div key={label} className="text-center">
-                  <p className="text-2xl font-bold text-cloud-white">{value.toLocaleString()}</p>
-                  <p className="text-text-muted text-xs mt-1">{label}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Top Gear */}
-          <section className="rounded-xl border border-deep-periwinkle/50 bg-soft-navy/40 p-6">
-            <h2 className="text-fairy-gold font-semibold text-lg mb-4">Top Gear (Top 5)</h2>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-              {[
-                { label: 'Mouse', items: topGear.mouse },
-                { label: 'Keyboard', items: topGear.keyboard },
-                { label: 'Headset', items: topGear.headset },
-              ].map(({ label, items }) => (
-                <div key={label}>
-                  <h3 className="text-text-secondary text-sm font-medium mb-2">{label}</h3>
-                  {items.length === 0 ? (
-                    <p className="text-text-muted text-xs">No data</p>
-                  ) : (
-                    <ol className="space-y-1">
-                      {items.map((item, i) => (
-                        <li key={item.name} className="flex items-center gap-2 text-sm">
-                          <span className="text-text-muted text-xs w-4">{i + 1}.</span>
-                          <span className="text-text-secondary flex-1 truncate">{item.name}</span>
-                          <span className="text-text-muted text-xs">{item.count}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      )}
-    </div>
+    <ServerStatsClient
+      serverName={server.name}
+      serverSlug={server.slug}
+      userServers={userServers}
+      memberCount={memberCount}
+      topDpi={topDpi}
+      avgEdpi={avgEdpi}
+      lastUpdatedLabel={lastUpdatedLabel}
+      dpiDistribution={dpiDistribution}
+      byDpi={byDpi}
+      topDpiEdpi={topDpiEdpi}
+      edpiQuantiles={edpiQuantiles}
+      bands={bands}
+      topGear={topGear}
+    />
   );
 }

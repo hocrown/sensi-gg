@@ -6,5 +6,14 @@
     "packages/shared",
     "packages/bot",
     "packages/web"
-  ]
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/web",
+    "dev:bot": "npm start --workspace=packages/bot",
+    "build": "npm run build --workspace=packages/web",
+    "typecheck": "npm run typecheck --workspace=packages/web",
+    "wsl:ports": "bash scripts/wsl-port-forward.sh",
+    "wsl:ports:clean": "bash scripts/wsl-port-forward.sh --clean",
+    "db:seed": "echo 'Run scripts/seed-test-data.sql in Supabase SQL Editor'"
+  }
 }

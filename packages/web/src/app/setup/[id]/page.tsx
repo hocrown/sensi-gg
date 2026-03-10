@@ -4,6 +4,7 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 import { UserAvatar } from '@/components/UserAvatar';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { calculateEdpi } from '@sensi-gg/shared';
 import { Crosshair, Mouse, Lightbulb, Target } from 'lucide-react';
 
 const glassCard = {
@@ -30,7 +31,7 @@ export default async function SetupDetailPage({
   const formatVal = (v: number | null | undefined) =>
     v != null ? String(v) : '\u2014';
 
-  const edpi = Math.round(setup.dpi * setup.general_sens);
+  const edpi = calculateEdpi(setup.dpi, setup.general_sens);
 
   return (
     <div className="max-w-4xl mx-auto">

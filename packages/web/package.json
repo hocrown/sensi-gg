@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@sensi-gg/shared": "*",
@@ -15,7 +16,8 @@
     "lucide-react": "^0.577.0",
     "next": "^15.x",
     "react": "^19.x",
-    "react-dom": "^19.x"
+    "react-dom": "^19.x",
+    "recharts": "^3.8.0"
   },
   "devDependencies": {
     "@types/node": "^22.x",

@@ -6,13 +6,14 @@ import Link from 'next/link';
 import {
   Crosshair,
   Mouse,
-  Monitor,
   Lightbulb,
   Share2,
   Info,
   Copy,
   Check,
+  ChevronDown,
 } from 'lucide-react';
+import { GearSelector } from '@/components/GearSelector';
 
 interface SetupData {
   id: string;
@@ -31,6 +32,7 @@ interface SetupData {
   headset?: string | null;
   mousepad?: string | null;
   monitor?: string | null;
+  monitor_settings?: string | null;
   notes?: string | null;
 }
 
@@ -39,14 +41,13 @@ interface SetupMeClientProps {
   handle: string | null;
 }
 
-type Tab = 'sens' | 'gear' | 'graphics' | 'tips' | 'share';
+type Tab = 'sens' | 'gear' | 'tips' | 'share';
 
 const TABS: { id: Tab; label: string; Icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
-  { id: 'sens',     label: 'Sensitivity', Icon: Crosshair  },
-  { id: 'gear',     label: 'Gear',        Icon: Mouse      },
-  { id: 'graphics', label: 'Graphics',    Icon: Monitor    },
-  { id: 'tips',     label: 'Tips',        Icon: Lightbulb  },
-  { id: 'share',    label: 'Share',       Icon: Share2     },
+  { id: 'sens',  label: 'Sensitivity', Icon: Crosshair },
+  { id: 'gear',  label: 'Gear',        Icon: Mouse     },
+  { id: 'tips',  label: 'Tips',        Icon: Lightbulb },
+  { id: 'share', label: 'Share',       Icon: Share2    },
 ];
 
 // ── Shared field styles ──────────────────────────────────────────────────────
@@ -131,8 +132,14 @@ export function SetupMeClient({ initialSetup, handle }: SetupMeClientProps) {
   const [mousepad, setMousepad] = useState(initialSetup?.mousepad ?? '');
   const [monitor, setMonitor] = useState(initialSetup?.monitor ?? '');
 
+  // Monitor settings
+  const [monitorSettings, setMonitorSettings] = useState(initialSetup?.monitor_settings ?? '');
+
   // Notes
   const [notes, setNotes] = useState(initialSetup?.notes ?? '');
+
+  // Scope collapsible
+  const [scopeExpanded, setScopeExpanded] = useState(false);
 
   // Join code
   const [joinCode, setJoinCode] = useState('');
@@ -151,28 +158,45 @@ export function SetupMeClient({ initialSetup, handle }: SetupMeClientProps) {
       return isNaN(n) ? null : n;
     };
 
+    // Only send fields for the active tab
+    let payload: Record<string, unknown> = { tab: activeTab };
+
+    if (activeTab === 'sens') {
+      payload = {
+        ...payload,
+        dpi,
+        general_sens: generalSens,
+        vertical_multiplier: parseNum(verticalMultiplier),
+        ads_sens: parseNum(adsSens),
+        scope_2x: parseNum(scope2x),
+        scope_3x: parseNum(scope3x),
+        scope_4x: parseNum(scope4x),
+        scope_6x: parseNum(scope6x),
+        scope_8x: parseNum(scope8x),
+        scope_15x: parseNum(scope15x),
+      };
+    } else if (activeTab === 'gear') {
+      payload = {
+        ...payload,
+        mouse: mouse || null,
+        keyboard: keyboard || null,
+        headset: headset || null,
+        mousepad: mousepad || null,
+        monitor: monitor || null,
+        monitor_settings: monitorSettings || null,
+      };
+    } else if (activeTab === 'tips') {
+      payload = {
+        ...payload,
+        notes: notes || null,
+      };
+    }
+
     try {
       const res = await fetch('/api/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dpi,
-          general_sens: generalSens,
-          vertical_multiplier: parseNum(verticalMultiplier),
-          ads_sens: parseNum(adsSens),
-          scope_2x: parseNum(scope2x),
-          scope_3x: parseNum(scope3x),
-          scope_4x: parseNum(scope4x),
-          scope_6x: parseNum(scope6x),
-          scope_8x: parseNum(scope8x),
-          scope_15x: parseNum(scope15x),
-          mouse: mouse || null,
-          keyboard: keyboard || null,
-          headset: headset || null,
-          mousepad: mousepad || null,
-          monitor: monitor || null,
-          notes: notes || null,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -330,6 +354,49 @@ export function SetupMeClient({ initialSetup, handle }: SetupMeClientProps) {
               />
             </div>
           </div>
+
+          {/* ── Scope Sensitivities (collapsible) ────────────────────────── */}
+          <div
+            className="mt-6 rounded-2xl border border-white/10 overflow-hidden"
+            style={{ background: 'rgba(13,13,32,0.3)' }}
+          >
+            <button
+              type="button"
+              onClick={() => setScopeExpanded(v => !v)}
+              className="w-full flex items-center justify-between px-5 py-4 text-sm font-medium text-mist-blue hover:text-cloud-white transition-colors"
+            >
+              <span>Scope Sensitivities</span>
+              <ChevronDown
+                size={16}
+                className={`transition-transform duration-200 ${scopeExpanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {scopeExpanded && (
+              <div className="px-5 pb-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {[
+                  { label: '2x Scope',  value: scope2x,  set: setScope2x  },
+                  { label: '3x Scope',  value: scope3x,  set: setScope3x  },
+                  { label: '4x Scope',  value: scope4x,  set: setScope4x  },
+                  { label: '6x Scope',  value: scope6x,  set: setScope6x  },
+                  { label: '8x Scope',  value: scope8x,  set: setScope8x  },
+                  { label: '15x Scope', value: scope15x, set: setScope15x },
+                ].map(s => (
+                  <div key={s.label}>
+                    <label className={labelCls}>{s.label}</label>
+                    <input
+                      type="number"
+                      value={s.value}
+                      min={1}
+                      max={100}
+                      step={1}
+                      onChange={e => s.set(e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </SectionCard>
       )}
 
@@ -339,83 +406,63 @@ export function SetupMeClient({ initialSetup, handle }: SetupMeClientProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className={labelCls}>Mouse</label>
-              <input
-                type="text"
+              <GearSelector
+                category="mouse"
                 value={mouse}
+                onChange={setMouse}
                 placeholder="Logitech G Pro X Superlight"
-                onChange={e => setMouse(e.target.value)}
-                className={inputCls}
               />
             </div>
             <div>
               <label className={labelCls}>Keyboard</label>
-              <input
-                type="text"
+              <GearSelector
+                category="keyboard"
                 value={keyboard}
+                onChange={setKeyboard}
                 placeholder="Wooting 60HE"
-                onChange={e => setKeyboard(e.target.value)}
-                className={inputCls}
               />
             </div>
             <div>
               <label className={labelCls}>Headset</label>
-              <input
-                type="text"
+              <GearSelector
+                category="headset"
                 value={headset}
+                onChange={setHeadset}
                 placeholder="HyperX Cloud Alpha"
-                onChange={e => setHeadset(e.target.value)}
-                className={inputCls}
               />
             </div>
             <div>
               <label className={labelCls}>Mousepad</label>
-              <input
-                type="text"
+              <GearSelector
+                category="mousepad"
                 value={mousepad}
+                onChange={setMousepad}
                 placeholder="Artisan Hien XL"
-                onChange={e => setMousepad(e.target.value)}
-                className={inputCls}
               />
             </div>
             <div className="sm:col-span-2">
               <label className={labelCls}>Monitor</label>
-              <input
-                type="text"
+              <GearSelector
+                category="monitor"
                 value={monitor}
+                onChange={setMonitor}
                 placeholder="BenQ XL2546K"
-                onChange={e => setMonitor(e.target.value)}
-                className={inputCls}
               />
             </div>
-          </div>
-        </SectionCard>
-      )}
-
-      {/* ── Graphics / Scopes Tab ───────────────────────────────────────── */}
-      {activeTab === 'graphics' && (
-        <SectionCard title="Scope Sensitivities" Icon={Monitor}>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-            {[
-              { label: '2x Scope',  value: scope2x,  set: setScope2x  },
-              { label: '3x Scope',  value: scope3x,  set: setScope3x  },
-              { label: '4x Scope',  value: scope4x,  set: setScope4x  },
-              { label: '6x Scope',  value: scope6x,  set: setScope6x  },
-              { label: '8x Scope',  value: scope8x,  set: setScope8x  },
-              { label: '15x Scope', value: scope15x, set: setScope15x },
-            ].map(s => (
-              <div key={s.label}>
-                <label className={labelCls}>{s.label}</label>
-                <input
-                  type="number"
-                  value={s.value}
-                  min={1}
-                  max={100}
-                  step={1}
-                  onChange={e => s.set(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-            ))}
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Monitor Settings</label>
+              <textarea
+                value={monitorSettings}
+                placeholder="DyAc: Premium, Black eQualizer: 8, Color Vibrance: 12"
+                maxLength={300}
+                rows={3}
+                onChange={e => setMonitorSettings(e.target.value)}
+                className={`${inputCls} resize-none`}
+              />
+              <p className="text-xs text-text-muted mt-1.5 text-right">
+                {monitorSettings.length} / 300
+              </p>
+            </div>
           </div>
         </SectionCard>
       )}

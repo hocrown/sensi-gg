@@ -81,13 +81,18 @@ export async function execute(interaction) {
       const result = await getSetupByDiscordUserId(interaction.user.id);
       if (!result) {
         return interaction.reply({
-          content: `No setup found. Register on the web: ${WEB_URL}/setup/me`,
+          content: `세팅이 없습니다. 웹에서 등록하세요: ${WEB_URL}/setup/me`,
           flags: 64,
         });
       }
 
       const { embed, components } = buildSetupEmbed(result);
-      await interaction.reply({ embeds: [embed], components, flags: 64 });
+      await interaction.reply({
+        content: `💻 웹에서 더 편하게 관리: ${WEB_URL}/setup/me`,
+        embeds: [embed],
+        components,
+        flags: 64,
+      });
 
     } else if (subcommand === 'user') {
       const handleInput = interaction.options.getString('handle');
@@ -108,7 +113,7 @@ export async function execute(interaction) {
 
       if (!result) {
         return interaction.reply({
-          content: 'No setup found for that user.',
+          content: '해당 유저의 세팅이 없습니다.',
           flags: 64,
         });
       }
@@ -120,7 +125,7 @@ export async function execute(interaction) {
       const profile = await getProfileByDiscordUserId(interaction.user.id);
       if (!profile) {
         return interaction.reply({
-          content: `No profile found. Register on the web: ${WEB_URL}/setup/me`,
+          content: `프로필이 없습니다. 웹에서 등록하세요: ${WEB_URL}/setup/me`,
           flags: 64,
         });
       }
@@ -128,12 +133,12 @@ export async function execute(interaction) {
       const displayName = profile.display_name || interaction.user.username;
       // NOT ephemeral — designed for channel sharing
       await interaction.reply({
-        content: `${displayName}'s PUBG Setup: ${WEB_URL}/u/${profile.handle}`,
+        content: `🎯 **${displayName}**의 세팅: ${WEB_URL}/u/${profile.handle}`,
       });
     }
   } catch (err) {
     console.error('[setup] command error:', err);
-    const reply = { content: 'An error occurred. Please try again later.', flags: 64 };
+    const reply = { content: '처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', flags: 64 };
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp(reply).catch(() => {});
     } else {
