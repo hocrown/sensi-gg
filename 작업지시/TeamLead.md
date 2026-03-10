@@ -43,6 +43,14 @@
 - Next.js API(라우트 핸들러) 또는 Supabase RPC/뷰 중 하나로 통계 JSON 제공
 - README 업데이트(로컬 실행, env, 배포 방법)
 
+# 결정 사항(현재는 기본값으로 구현)
+- 공개 URL: /u/:handle, /s/:slug
+- eDPI 계산식은 기존 봇과 동일하게 맞춘다(불일치 시 마이그레이션/재계산 필요)
+- 감도 밴드 기준은 config로 관리(초기값 low<280, mid<380)
+- 서버 claim 검증(진짜 디스코드 서버 관리자 여부)은 MVP에서 완화 가능
+  - 우선 claim은 로그인 유저 누구나 가능하게 하고, 추후 Discord API로 Manage Guild 확인 추가
+- membership 생성은 join_code 기반으로 한다(봇 없는 서버도 가능)
+
 ## 진행 순서(권장)
 1) repo 구조 정리(모노레포) + shared 패키지 생성
 2) Supabase 스키마 확정 + 마이그레이션 작성 + RLS 설계
